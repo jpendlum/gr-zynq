@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<block>
+  <name>fir_filter_ii</name>
+  <key>zynq_fir_filter_ii</key>
+  <category>FPGA</category>
+  <import>import zynq</import>
+  <make>zynq.fir_filter_ii($taps)</make>
+  <callback>set_taps($taps)></callback>
+  <param>
+    <name>Filter Taps</name>
+    <key>taps</key>
+    <value>[-291,-798,-1171,-1397,-846,596,3074,6153,9240,11500,12346]</value>
+    <type>int_vector</type>
+  </param>
+  <check>not len($taps) != 11</check>
+  <sink>
+    <name>in</name>
+    <type>int</type>
+  </sink>
+  <source>
+    <name>out</name>
+    <type>int</type>
+  </source>
+  <doc>
+    21 point, symmetric FIR filter implemented in FPGA fabric.
+  </doc>
+</block>
