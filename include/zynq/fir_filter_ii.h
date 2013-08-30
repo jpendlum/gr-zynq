@@ -31,17 +31,18 @@ namespace gr {
     /*!
      * \brief FPGA accelerated FIR filter
      * \ingroup FPGA
+     *
      */
     class ZYNQ_API fir_filter_ii : virtual public gr_sync_block
     {
      public:
-      // gr::zynq::fir_filter_ii::sptr
       typedef boost::shared_ptr<fir_filter_ii> sptr;
 
       /*!
-       * FPGA accelerated FIR filter
+       * \brief FPGA accelerated FIR filter
        *
        * 21 point, symmetric FIR filter implemented in FPGA fabric.
+       *
        */
       static sptr make(const std::vector<int> &taps);
     };

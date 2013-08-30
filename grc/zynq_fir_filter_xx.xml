@@ -1,0 +1,45 @@
+<?xml version="1.0"?>
+<block>
+  <name>fir_filter_fpga</name>
+  <key>zynq_fir_filter_xx</key>
+  <category>FPGA</category>
+  <import>import zynq</import>
+  <make>zynq.fir_filter_$(type)($taps)</make>
+  <callback>set_taps($taps)></callback>
+  <param>
+    <name>Type</name>
+    <key>type</key>
+    <type>enum</type>
+    <option>
+      <name>Complex Int16->Complex Float</name>
+      <key>ic</key>
+      <opt>input:sc16</opt>
+      <opt>output:complex</opt>
+    </option>
+    <option>
+      <name>Int->Int (Real Taps)</name>
+      <key>ii</key>
+      <opt>input:float</opt>
+      <opt>output:float</opt>
+    </option>
+  </param>
+  <param>
+    <name>Filter Taps</name>
+    <key>taps</key>
+    <value>[-51,-662,-190,510,12,-719,238,945,-671,-1161,1438,1341,-3060,-1460,10287,17886]</value>
+    <type>int_vector</type>
+  </param>
+  <check>not len($taps) != 16</check>
+  <sink>
+    <name>in</name>
+    <type>$type.input</type>
+  </sink>
+  <source>
+    <name>out</name>
+    <type>$type.output</type>
+  </source>
+  <doc>
+    31 point, symmetric FIR filter implemented in FPGA fabric. Taps are real with the fixed point format fx1.31. \
+    Due to the symmetry of the filter, only 16 taps are required.
+  </doc>
+</block>

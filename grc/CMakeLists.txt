@@ -17,5 +17,5 @@
 # the Free Software Foundation, Inc., 51 Franklin Street,
 # Boston, MA 02110-1301, USA.
 install(FILES
-    zynq_fir_filter_ii.xml DESTINATION share/gnuradio/grc/blocks
+    zynq_fir_filter_xx.xml DESTINATION share/gnuradio/grc/blocks
 )

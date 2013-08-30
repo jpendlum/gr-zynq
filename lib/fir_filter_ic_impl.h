@@ -24,15 +24,15 @@
  *
  ***************************************************************************/
 
-#ifndef INCLUDED_ZYNQ_FIR_FILTER_II_IMPL_H
-#define INCLUDED_ZYNQ_FIR_FILTER_II_IMPL_H
+#ifndef INCLUDED_ZYNQ_FIR_FILTER_IC_IMPL_H
+#define INCLUDED_ZYNQ_FIR_FILTER_IC_IMPL_H
 
-#include <zynq/fir_filter_ii.h>
+#include <zynq/fir_filter_ic.h>
 
 namespace gr {
   namespace zynq {
 
-    class fir_filter_ii_impl : public fir_filter_ii
+    class fir_filter_ic_impl : public fir_filter_ic
     {
      private:
       int d_fd;
@@ -48,8 +48,8 @@ namespace gr {
       int get_params_from_sysfs();
 
      public:
-      fir_filter_ii_impl(const std::vector<int> &taps);
-      ~fir_filter_ii_impl();
+      fir_filter_ic_impl(const std::vector<int> &taps);
+      ~fir_filter_ic_impl();
 
       void set_taps(const std::vector<int> &taps);
 
@@ -61,5 +61,5 @@ namespace gr {
   } // namespace zynq
 } // namespace gr
 
-#endif /* INCLUDED_ZYNQ_FIR_FILTER_II_IMPL_H */
+#endif /* INCLUDED_ZYNQ_FIR_FILTER_IC_IMPL_H */
 

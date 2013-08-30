@@ -21,7 +21,7 @@
 from gnuradio import gr, gr_unittest
 import zynq_swig as zynq
 
-class qa_fir_filter_ii (gr_unittest.TestCase):
+class qa_fir_filter_xx (gr_unittest.TestCase):
 
     def setUp (self):
         self.tb = gr.top_block ()
@@ -31,10 +31,11 @@ class qa_fir_filter_ii (gr_unittest.TestCase):
 
     def test_fir_filter_001 (self):
         # Check impulse response
-        # Impulse is 2^5 due to truncation in the FPGA
-        src_data = (32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
-        expected_result = (6, 0, -4, -3,  5, 6, -6, -13, 7, 44, 64, 44, 7, -13, -6, 6, 5, -3, -4, 0, 6)
-        filter_taps = (6, 0, -4, -3,  5, 6, -6, -13, 7, 44, 64)
+        # Impulse is 2^16 due to the fixed point format of the coefficients. With a large enough impulse,
+        # the filter's impulse response will simply be the filter coefficients.
+        src_data = (2**16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+        expected_result = (-51,-662,-190,510,12,-719,238,945,-671,-1161,1438,1341,-3060,-1460,10287,17886,10287,-1460,-3060,1341,1438,-1161,-671,945,238,-719,12,510,-190,-662,-51)
+        filter_taps = (-51,-662,-190,510,12,-719,238,945,-671,-1161,1438,1341,-3060,-1460,10287,17886) * 2**15
         src = gr.vector_source_i(src_data)
         # FIR filter taps are set to expected_result
         fir_filter = zynq.fir_filter_ii(filter_taps)
@@ -46,4 +47,4 @@ class qa_fir_filter_ii (gr_unittest.TestCase):
         self.assertEqual(result_data,expected_result)
 
 if __name__ == '__main__':
-    gr_unittest.run(qa_fir_filter_ii)
+    gr_unittest.run(qa_fir_filter_xx)

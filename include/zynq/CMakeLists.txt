@@ -22,5 +22,6 @@
 ########################################################################
 install(FILES
     api.h
-    fir_filter_ii.h DESTINATION include/zynq
+    fir_filter_ii.h
+    fir_filter_ic.h DESTINATION include/zynq
 )
