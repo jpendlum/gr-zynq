@@ -1,22 +1,28 @@
 /* -*- c++ -*- */
-/*
- * Copyright 2013 <+YOU OR YOUR COMPANY+>.
+/****************************************************************************
  *
- * This is free software; you can redistribute it and/or modify
+ * Copyright 2013 Jonathon Pendlum
+ *
+ * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 3, or (at your option)
- * any later version.
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * This software is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this software; see the file COPYING.  If not, write to
- * the Free Software Foundation, Inc., 51 Franklin Street,
- * Boston, MA 02110-1301, USA.
- */
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ *
+ *
+ * Author:      Jonathon Pendlum (jon.pendlum@gmail.com)
+ * Description: FPGA accelerated 31 tap, fixed point (fx17.15), symmetric
+ *              FIR filter with reloadable coefficients.
+ *
+ ***************************************************************************/
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -52,8 +58,15 @@
 #define OFFSET_H2S          (0)
 #define OFFSET_S2H          (1 << 10)
 #define OFFSET_GLOBAL       (1 << 11)
-#define OFFSET_FIR_CONFIG   (1*8) + OFFSET_H2S
-#define OFFSET_FIR_RELOAD   (2*8) + OFFSET_H2S
+#define OFFSET_FIR_SAMP_WR  (0*8) + OFFSET_H2S // AXI Stream 0 (see FPGA code)
+#define OFFSET_FIR_SAMP_RD  (0*8) + OFFSET_S2H // AXI Stream 0
+#define OFFSET_FIR_COEFF_WR (1*8) + OFFSET_H2S // AXI Stream 1
+#define OFFSET_FIR_COEFF_RD (1*8) + OFFSET_S2H // AXI Stream 1
+#define OFFSET_STREAM2_WR   (2*8) + OFFSET_H2S // AXI Stream 2 Unused
+#define OFFSET_STREAM2_RD   (2*8) + OFFSET_S2H // AXI Stream 2 Unused
+#define OFFSET_STREAM3_WR   (3*8) + OFFSET_H2S // AXI Stream 3 Unused
+#define OFFSET_STREAM3_RD   (3*8) + OFFSET_S2H // AXI Stream 3 Unused
+
 
 #define FIFO_WR_CLEAR       0
 #define FIFO_WR_ADDR        1
@@ -70,15 +83,15 @@
 // too few samples is wasteful.
 #define MIN_NUM_SAMPLES     1
 // The AXI ACP bus read / write transfer rates are not symmetric, so a FIFO exists in the
-// FPGA fabric to account for the rate difference. Prevents sending too many samples that
+// FPGA fabric to account for the rate difference. This prevents sending too many samples that
 // might cause the FIFO to overflow if a severe rate difference
 #define MAX_NUM_SAMPLES     8196
 // Number of unique taps (FIR filter is symmetric)
-#define NUM_TAPS            11
+#define NUM_TAPS            16
 
 namespace gr {
   namespace zynq {
-    // Hack to ensure only one FPGA accelerator instance occurs
+    // FIXME: Hack to ensure only one FPGA accelerator instance occurs
     static int g_init = 0;
 
     fir_filter_ii::sptr
@@ -97,7 +110,6 @@ namespace gr {
     {
       if (g_init == 1)
       {
-        // FIXME
         throw std::runtime_error("Only one accelerator instance supported (fix in future version!)\n");
       }
 
@@ -112,8 +124,7 @@ namespace gr {
       g_init = 1;
       // Reset everything so we start in a known state
       d_control_regs[OFFSET_GLOBAL] = 0;                // Soft reset command (resets everything)
-      d_control_regs[OFFSET_S2H+FIFO_WR_CLEAR] = 0;     // Reset S2H FIFO command, the write data is ignored
-      d_control_regs[OFFSET_H2S+FIFO_WR_CLEAR] = 0;     // Reset S2H FIFO command, the write data is ignored
+      // Useful debugging information
       // printf("\n");
       // printf("Control Registers Address: \t%p\n",d_control_regs);
       // printf("Control Registers Length: \t%lx\n",d_control_length);
@@ -136,15 +147,20 @@ namespace gr {
       g_init = 0;
     }
 
+    /*
+     * The FIR filter coefficients are loaded by writing them to the kernel buffer and
+     * loading those coefficients on stream 1 (see FPGA code). Once loaded, the new coefficients
+     * replace the old automatically.
+     * Coefficeints are fixed point fx17.15, i.e. 17 integer bits & 15 fraction bits.
+     */
     void fir_filter_ii_impl::set_taps(const std::vector<int> &taps)
     {
+      // Make sure the correct number of taps are provided
       if (taps.size() != NUM_TAPS)
       {
         throw std::runtime_error("Incorrect number of filter coefficients!\n");
       }
-      // The FIR filter coefficients are loaded by writing them to the kernel buffer and
-      // loading those coefficients on stream 2. Once loaded, the cofficients replace
-      // the old coefficients with a configuration command to the FIR filter core.
+      // Write taps into kernel buffer
       for (int i = 0; i < taps.size(); i++)
       {
         d_buff[i] = (long long int)taps[i];
@@ -154,14 +170,14 @@ namespace gr {
       // the physical address + size to the control register FIFOs.
       d_control_regs[OFFSET_FIR_RELOAD+FIFO_WR_ADDR] = d_phys_addr;
       d_control_regs[OFFSET_FIR_RELOAD+FIFO_WR_SIZE] = taps.size() * sizeof(long long int);
-      // Set config word to load new coefficient. In this case with only one set of cofficients and
-      // one pattern (see Xilinx FIR filter documentation), the only valid configuration word
-      d_buff[taps.size()] = 0;
-      // Commit coefficients
-      d_control_regs[OFFSET_FIR_CONFIG+FIFO_WR_ADDR] = d_phys_addr + taps.size() * sizeof(long long int);
-      d_control_regs[OFFSET_FIR_CONFIG+FIFO_WR_SIZE] = 1 * sizeof(long long int);
+      read(d_fd,0,0);
     }
 
+    /*
+     * Work function copies samples to the kernel buffer, sends memory read / write commands
+     * to the FPGA via the AXI slave bus, and copies filtered samples back into the output
+     * buffer.
+     */
     int fir_filter_ii_impl::work(int noutput_items,
                                  gr_vector_const_void_star &input_items,
                                  gr_vector_void_star &output_items)
@@ -172,15 +188,10 @@ namespace gr {
       int val = 0;
       int num_samples = 0;
 
-
-      // MIN_U
       if (noutput_items < MIN_NUM_SAMPLES)
       {
         return(0);
       }
-      // MAX_NUM_SAMPLES is the depth of the FIFO in the FPGA
-      // that prevents an overflow due to the asymmetric read / write
-      // speed of the FPGA / ARM interface.
       else if (noutput_items > MAX_NUM_SAMPLES)
       {
         num_samples = MAX_NUM_SAMPLES;
@@ -202,19 +213,18 @@ namespace gr {
       // samples back to kernel buffer
       int num_bytes = num_samples * sizeof(long long int); //noutput_items * sizeof(long long int);
       // Set the write address
-      d_control_regs[OFFSET_S2H+FIFO_WR_ADDR] = d_phys_addr + num_bytes;
+      d_control_regs[OFFSET_FIR_SAMP_WR+FIFO_WR_ADDR] = d_phys_addr + num_bytes;
       // Set the number of bytes to write
-      d_control_regs[OFFSET_S2H+FIFO_WR_SIZE] = num_bytes;
+      d_control_regs[OFFSET_FIR_SAMP_WR+FIFO_WR_SIZE] = num_bytes;
       // Set the read address
-      d_control_regs[OFFSET_H2S+FIFO_WR_ADDR] = d_phys_addr;
+      d_control_regs[OFFSET_FIR_SAMP_RD+FIFO_WR_ADDR] = d_phys_addr;
       // Set the number of bytes to read
-      d_control_regs[OFFSET_H2S+FIFO_WR_SIZE] = num_bytes;
+      d_control_regs[OFFSET_FIR_SAMP_RD+FIFO_WR_SIZE] = num_bytes;
       val = read(d_fd,0,0);
       // Read all status FIFOs. If not, the status FIFOs will fill and eventually cause
       // the AXI datamover in the FPGA to ignore further requests.
-      d_control_regs[OFFSET_H2S+FIFO_WR_STS_RDY] = 0;
-      d_control_regs[OFFSET_S2H+FIFO_WR_STS_RDY] = 0;
-      d_control_regs[OFFSET_FIR_CONFIG+FIFO_WR_STS_RDY] = 0;
+      d_control_regs[OFFSET_FIR_SAMP_RD+FIFO_WR_STS_RDY] = 0;
+      d_control_regs[OFFSET_FIR_SAMP_WR+FIFO_WR_STS_RDY] = 0;
       d_control_regs[OFFSET_FIR_RELOAD+FIFO_WR_STS_RDY] = 0;
 
       // Copy result from kernel buffer to output buffer
@@ -270,7 +280,7 @@ namespace gr {
       }
 
       // zero out the data region
-      //memset((void *)d_buff, 0, (unsigned int)(d_buffer_length));
+      // memset((void *)d_buff, 0, (unsigned int)(d_buffer_length));
       return(0);
     }
 
