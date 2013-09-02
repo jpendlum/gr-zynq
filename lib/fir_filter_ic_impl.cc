@@ -56,14 +56,14 @@
 #define OFFSET_H2S          (0)
 #define OFFSET_S2H          (1 << 10)
 #define OFFSET_GLOBAL       (1 << 11)
-#define OFFSET_FIR_SAMP_WR  (0*8) + OFFSET_H2S // AXI Stream 0 (see FPGA code)
-#define OFFSET_FIR_SAMP_RD  (0*8) + OFFSET_S2H // AXI Stream 0
-#define OFFSET_FIR_COEFF_WR (1*8) + OFFSET_H2S // AXI Stream 1
-#define OFFSET_FIR_COEFF_RD (1*8) + OFFSET_S2H // AXI Stream 1
-#define OFFSET_STREAM2_WR   (2*8) + OFFSET_H2S // AXI Stream 2 Unused
-#define OFFSET_STREAM2_RD   (2*8) + OFFSET_S2H // AXI Stream 2 Unused
-#define OFFSET_STREAM3_WR   (3*8) + OFFSET_H2S // AXI Stream 3 Unused
-#define OFFSET_STREAM3_RD   (3*8) + OFFSET_S2H // AXI Stream 3 Unused
+#define OFFSET_FIR_SAMP_WR  (0*8) + OFFSET_S2H // AXI Stream 0 (see FPGA code)
+#define OFFSET_FIR_SAMP_RD  (0*8) + OFFSET_H2S // AXI Stream 0
+#define OFFSET_FIR_COEFF_WR (1*8) + OFFSET_S2H // AXI Stream 1
+#define OFFSET_FIR_COEFF_RD (1*8) + OFFSET_H2S // AXI Stream 1
+#define OFFSET_STREAM2_WR   (2*8) + OFFSET_S2H // AXI Stream 2 Unused
+#define OFFSET_STREAM2_RD   (2*8) + OFFSET_H2S // AXI Stream 2 Unused
+#define OFFSET_STREAM3_WR   (3*8) + OFFSET_S2H // AXI Stream 3 Unused
+#define OFFSET_STREAM3_RD   (3*8) + OFFSET_H2S // AXI Stream 3 Unused
 
 
 #define FIFO_WR_CLEAR       0
@@ -149,7 +149,7 @@ namespace gr {
      * The FIR filter coefficients are loaded by writing them to the kernel buffer and
      * loading those coefficients on stream 1 (see FPGA code). Once loaded, the new coefficients
      * replace the old automatically.
-     * Coefficeints are fixed point fx17.15, i.e. 17 integer bits & 15 fraction bits.
+     * Coefficeints are fixed point fx1.31, i.e. 1 integer bits & 31 fraction bits.
      */
     void fir_filter_ic_impl::set_taps(const std::vector<int> &taps)
     {
@@ -165,10 +165,10 @@ namespace gr {
         d_buff[i] = (long long int)taps[i];
         //printf("d_buff[%2d](%p)=%lld\n",i,&d_buff[i],d_buff[i]);
       }
-      // Load new coefficients by setting the stream to 2 (see OFFSET_FIR_COEFF_WR) and writing
+      // Load new coefficients by setting the stream to 2 (see OFFSET_FIR_COEFF_RD) and writing
       // the physical address + size to the control register FIFOs.
-      d_control_regs[OFFSET_FIR_COEFF_WR+FIFO_WR_ADDR] = d_phys_addr;
-      d_control_regs[OFFSET_FIR_COEFF_WR+FIFO_WR_SIZE] = taps.size() * sizeof(long long int);
+      d_control_regs[OFFSET_FIR_COEFF_RD+FIFO_WR_ADDR] = d_phys_addr;
+      d_control_regs[OFFSET_FIR_COEFF_RD+FIFO_WR_SIZE] = taps.size() * sizeof(long long int);
       val = read(d_fd,0,0);
     }
 
@@ -181,8 +181,7 @@ namespace gr {
                                  gr_vector_const_void_star &input_items,
                                  gr_vector_void_star &output_items)
     {
-      const short *in_i = (const short *) input_items[0];
-      const short *in_q = (const short *) input_items[1];
+      const short *in = (const short *) input_items[0];
       gr_complex *out = (gr_complex *) output_items[0];
       // Easier to work with d_buff as a 32 bit buffer
       int *d_buff32 = (int *)d_buff;
@@ -206,11 +205,10 @@ namespace gr {
       // Fill kernel buffer with samples from input buffer taking in account
       // that the FIR filter expects two int32 samples (i.e. complex int) packed into a
       // 64-bit word but we are provided two int16 samples (i.e. complex int16)
-      for(i = 0; i < 2*num_samples; i=i+2)
+      for(i = 0; i < 2*num_samples; i++)
       {
-        d_buff32[i]   = (int)(in_i[i]);
-        d_buff32[i+1] = (int)(in_q[i]);
-        //printf("d_buff[%2d](%p)=%lld\n",i,&d_buff[i],d_buff[i]);
+        d_buff32[i]   = (int)(in[i]);
+        //printf("d_buff32[%2d](%p)=%d\n",i,&d_buff32[i],d_buff32[i]);
       }
 
       // Setup control registers to read samples from kernel buffer and write
@@ -232,10 +230,11 @@ namespace gr {
       d_control_regs[OFFSET_FIR_COEFF_WR+FIFO_WR_STS_RDY] = 0;
 
       // Copy result from kernel buffer to output buffer and convert to complex float
-      for(i = 0; i < 2*num_samples; i++)
+      for(i = 0; i < num_samples; i++)
       {
-        out[i] = gr_complex((float)d_buff32[i+num_samples],(float)d_buff32[i+num_samples+1]);
-        //printf("d_buff[%2d](%p)=%lld\n",i+num_samples,&d_buff[i+num_samples],d_buff[i+num_samples]);
+        out[i] = gr_complex((float)d_buff32[2*(i+num_samples)],(float)d_buff32[2*(i+num_samples)+1]);
+        //printf("d_buff32[%2d](%p)=%d\n",2*(i+num_samples),&d_buff32[2*(i+num_samples)],d_buff32[2*(i+num_samples)]);
+        //printf("d_buff32[%2d](%p)=%d\n",2*(i+num_samples)+1,&d_buff32[2*(i+num_samples)+1],d_buff32[2*(i+num_samples)+1]);
       }
 
       // Tell runtime system how many output items we produced.

@@ -17,16 +17,16 @@
       <opt>output:complex</opt>
     </option>
     <option>
-      <name>Int->Int (Real Taps)</name>
+      <name>Int->Int</name>
       <key>ii</key>
-      <opt>input:float</opt>
-      <opt>output:float</opt>
+      <opt>input:int</opt>
+      <opt>output:int</opt>
     </option>
   </param>
   <param>
     <name>Filter Taps</name>
     <key>taps</key>
-    <value>[-51,-662,-190,510,12,-719,238,945,-671,-1161,1438,1341,-3060,-1460,10287,17886]</value>
+    <value>[-3373594,-43357619,-12454812,33401737,814725,-47093424,15589663,61904123,-43953075,-76095088,94225548,87886094,-200570054,-95666150,674146161,1172144783]</value>
     <type>int_vector</type>
   </param>
   <check>not len($taps) != 16</check>
@@ -39,7 +39,6 @@
     <type>$type.output</type>
   </source>
   <doc>
-    31 point, symmetric FIR filter implemented in FPGA fabric. Taps are real with the fixed point format fx1.31. \
-    Due to the symmetry of the filter, only 16 taps are required.
+    31 point, symmetric FIR filter implemented in FPGA fabric. Taps are real with the fixed point format fx1.31. Due to the symmetry of the filter, only 16 taps are required.
   </doc>
 </block>

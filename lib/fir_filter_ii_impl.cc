@@ -58,14 +58,14 @@
 #define OFFSET_H2S          (0)
 #define OFFSET_S2H          (1 << 10)
 #define OFFSET_GLOBAL       (1 << 11)
-#define OFFSET_FIR_SAMP_WR  (0*8) + OFFSET_H2S // AXI Stream 0 (see FPGA code)
-#define OFFSET_FIR_SAMP_RD  (0*8) + OFFSET_S2H // AXI Stream 0
-#define OFFSET_FIR_COEFF_WR (1*8) + OFFSET_H2S // AXI Stream 1
-#define OFFSET_FIR_COEFF_RD (1*8) + OFFSET_S2H // AXI Stream 1
-#define OFFSET_STREAM2_WR   (2*8) + OFFSET_H2S // AXI Stream 2 Unused
-#define OFFSET_STREAM2_RD   (2*8) + OFFSET_S2H // AXI Stream 2 Unused
-#define OFFSET_STREAM3_WR   (3*8) + OFFSET_H2S // AXI Stream 3 Unused
-#define OFFSET_STREAM3_RD   (3*8) + OFFSET_S2H // AXI Stream 3 Unused
+#define OFFSET_FIR_SAMP_WR  (0*8) + OFFSET_S2H // AXI Stream 0 (see FPGA code)
+#define OFFSET_FIR_SAMP_RD  (0*8) + OFFSET_H2S // AXI Stream 0
+#define OFFSET_FIR_COEFF_WR (1*8) + OFFSET_S2H // AXI Stream 1
+#define OFFSET_FIR_COEFF_RD (1*8) + OFFSET_H2S // AXI Stream 1
+#define OFFSET_STREAM2_WR   (2*8) + OFFSET_S2H // AXI Stream 2 Unused
+#define OFFSET_STREAM2_RD   (2*8) + OFFSET_H2S // AXI Stream 2 Unused
+#define OFFSET_STREAM3_WR   (3*8) + OFFSET_S2H // AXI Stream 3 Unused
+#define OFFSET_STREAM3_RD   (3*8) + OFFSET_H2S // AXI Stream 3 Unused
 
 
 #define FIFO_WR_CLEAR       0
@@ -151,7 +151,7 @@ namespace gr {
      * The FIR filter coefficients are loaded by writing them to the kernel buffer and
      * loading those coefficients on stream 1 (see FPGA code). Once loaded, the new coefficients
      * replace the old automatically.
-     * Coefficeints are fixed point fx17.15, i.e. 17 integer bits & 15 fraction bits.
+     * Coefficeints are fixed point fx1.31, i.e. 1 integer bits & 31 fraction bits.
      */
     void fir_filter_ii_impl::set_taps(const std::vector<int> &taps)
     {
@@ -167,10 +167,10 @@ namespace gr {
         d_buff[i] = (long long int)taps[i];
         //printf("d_buff[%2d](%p)=%lld\n",i,&d_buff[i],d_buff[i]);
       }
-      // Load new coefficients by setting the stream to 2 (see OFFSET_FIR_COEFF_WR) and writing
+      // Load new coefficients by setting the stream to 2 (see OFFSET_FIR_COEFF_RD) and writing
       // the physical address + size to the control register FIFOs.
-      d_control_regs[OFFSET_FIR_COEFF_WR+FIFO_WR_ADDR] = d_phys_addr;
-      d_control_regs[OFFSET_FIR_COEFF_WR+FIFO_WR_SIZE] = taps.size() * sizeof(long long int);
+      d_control_regs[OFFSET_FIR_COEFF_RD+FIFO_WR_ADDR] = d_phys_addr;
+      d_control_regs[OFFSET_FIR_COEFF_RD+FIFO_WR_SIZE] = taps.size() * sizeof(long long int);
       val = read(d_fd,0,0);
     }
 
