@@ -19,8 +19,8 @@
  */
 
 
-#ifndef INCLUDED_ZYNQ_FIR_FILTER_IC_H
-#define INCLUDED_ZYNQ_FIR_FILTER_IC_H
+#ifndef INCLUDED_ZYNQ_FIR_FILTER_CC_H
+#define INCLUDED_ZYNQ_FIR_FILTER_CC_H
 
 #include <zynq/api.h>
 #include <gr_sync_block.h>
@@ -33,10 +33,10 @@ namespace gr {
      * \ingroup FPGA
      *
      */
-    class ZYNQ_API fir_filter_ic : virtual public gr_sync_block
+    class ZYNQ_API fir_filter_cc : virtual public gr_sync_block
     {
      public:
-      typedef boost::shared_ptr<fir_filter_ic> sptr;
+      typedef boost::shared_ptr<fir_filter_cc> sptr;
 
       /*!
        * \brief FPGA accelerated FIR filter
@@ -50,5 +50,5 @@ namespace gr {
   } // namespace zynq
 } // namespace gr
 
-#endif /* INCLUDED_ZYNQ_FIR_FILTER_IC_H */
+#endif /* INCLUDED_ZYNQ_FIR_FILTER_CC_H */
 
