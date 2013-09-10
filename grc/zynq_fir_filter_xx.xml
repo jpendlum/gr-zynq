@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <block>
-  <name>fir_filter_fpga</name>
-  <key>zynq_fir_filter_xx</key>
+  <name>FIR Filter FPGA</name>
+  <key>fir_filter_fpga_xx</key>
   <category>FPGA</category>
   <import>import zynq</import>
   <make>zynq.fir_filter_$(type)($taps)</make>
