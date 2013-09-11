@@ -316,9 +316,23 @@ namespace gr {
 
       // Enumerate devcfg
       enumerate = udev_enumerate_new(udev);
-      udev_enumerate_add_match_sysname(enumerate, "f8007000.devcfg");
+      udev_enumerate_add_match_sysname(enumerate, "f8007000.ps7-dev-cfg");
       udev_enumerate_scan_devices(enumerate);
       device = udev_enumerate_get_list_entry(enumerate);
+
+      // Did not find a device, lets try a different name
+      if (device == NULL)
+      {
+        udev_enumerate_add_match_sysname(enumerate, "f8007000.devcfg");
+        udev_enumerate_scan_devices(enumerate);
+        device = udev_enumerate_get_list_entry(enumerate);
+        // No luck, error out
+        if (device == NULL)
+        {
+          printf("ERROR: Did not find xdevcfg!\n");
+          return(-1);
+        }
+      }
 
       // List should have only one entry
       if (udev_list_entry_get_next(device) != NULL)
