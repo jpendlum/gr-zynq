@@ -19,7 +19,7 @@
 # Boston, MA 02110-1301, USA.
 #
 
-from gnuradio import gr, gr_unittest
+from gnuradio import blocks, gr, gr_unittest
 import zynq_swig as zynq
 
 class qa_fir_filter_ic (gr_unittest.TestCase):
@@ -39,10 +39,10 @@ class qa_fir_filter_ic (gr_unittest.TestCase):
         filter_taps = (1,-1,2,-2,3,-3,4,-4,5,-5,6,-6,7,-7,8,-8)
         # Filter coefficients are fx1.31, so scale them up to allow us to retreive the filter coefficients from the impulse response.
         filter_taps = [x * 2**17 for x in filter_taps]
-        src = gr.vector_source_i(src_data)
+        src = blocks.vector_source_i(src_data)
         # FIR filter taps are set to expected_result
         fir_filter = zynq.fir_filter_ic(filter_taps)
-        dst = gr.vector_sink_c()
+        dst = blocks.vector_sink_c()
         self.tb.connect(src, fir_filter)
         self.tb.connect(fir_filter, dst)
         self.tb.run()

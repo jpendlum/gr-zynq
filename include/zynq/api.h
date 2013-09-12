@@ -22,7 +22,7 @@
 #ifndef INCLUDED_ZYNQ_API_H
 #define INCLUDED_ZYNQ_API_H
 
-#include <gruel/attributes.h>
+#include <gnuradio/attributes.h>
 
 #ifdef gnuradio_zynq_EXPORTS
 #  define ZYNQ_API __GR_ATTR_EXPORT

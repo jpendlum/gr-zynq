@@ -23,7 +23,7 @@
 #define INCLUDED_ZYNQ_FIR_FILTER_II_H
 
 #include <zynq/api.h>
-#include <gr_sync_block.h>
+#include <gnuradio/sync_block.h>
 
 namespace gr {
   namespace zynq {
@@ -33,7 +33,7 @@ namespace gr {
      * \ingroup FPGA
      *
      */
-    class ZYNQ_API fir_filter_ii : virtual public gr_sync_block
+    class ZYNQ_API fir_filter_ii : virtual public gr::sync_block
     {
      public:
       typedef boost::shared_ptr<fir_filter_ii> sptr;
@@ -41,7 +41,7 @@ namespace gr {
       /*!
        * \brief FPGA accelerated FIR filter
        *
-       * 21 point, symmetric FIR filter implemented in FPGA fabric.
+       * 31 point, symmetric FIR filter implemented in FPGA fabric.
        *
        */
       static sptr make(const std::vector<int> &taps);

@@ -32,11 +32,10 @@
 #include "config.h"
 #endif
 
-#include <gr_io_signature.h>
+#include <gnuradio/io_signature.h>
 #include "fir_filter_cc_impl.h"
 #include <stdio.h>
 #include <stdlib.h>
-// #include <time.h>
 #include <libudev.h>
 #include <unistd.h>
 #include <sys/types.h>
@@ -68,7 +67,6 @@
 #define OFFSET_STREAM2_RD   (2*8) + OFFSET_H2S // AXI Stream 2 Unused
 #define OFFSET_STREAM3_WR   (3*8) + OFFSET_S2H // AXI Stream 3 Unused
 #define OFFSET_STREAM3_RD   (3*8) + OFFSET_H2S // AXI Stream 3 Unused
-
 
 #define FIFO_WR_CLEAR       0
 #define FIFO_WR_ADDR        1
@@ -106,9 +104,9 @@ namespace gr {
      * Open driver for FPGA communication and set FIR filter taps with constructor
      */
     fir_filter_cc_impl::fir_filter_cc_impl(const std::vector<int> &taps)
-      : gr_sync_block("fir_filter_cc",
-          gr_make_io_signature(1, 1, sizeof(gr_complex)),
-          gr_make_io_signature(1, 1, sizeof(gr_complex)))
+      : gr::sync_block("fir_filter_cc",
+          gr::io_signature::make(1, 1, sizeof(gr_complex)),
+          gr::io_signature::make(1, 1, sizeof(gr_complex)))
     {
       if (g_init == 1)
       {
@@ -215,10 +213,8 @@ namespace gr {
       {
         d_buff32[2*i]   = (int)(in[i].real());
         d_buff32[2*i+1] = (int)(in[i].imag());
-        //printf("in[%d].real: %d\n",i,(int)(in[i].real()));
-        //printf("in[%d].imag: %d\n",i,(int)(in[i].imag()));
-        //printf("d_buff32[%2d](%p)=%d\n",i,&d_buff32[2*i],d_buff32[2*i]);
-        //printf("d_buff32[%2d](%p)=%d\n",i,&d_buff32[2*i+1],d_buff32[2*i+1]);
+        //printf("in[i]: %f\n",i,in[i]);
+        //printf("d_buff32[%2d](%p)=%d\n",i,&d_buff32[i],d_buff32[i]);
       }
 
       // Setup control registers to read samples from kernel buffer and write
@@ -405,4 +401,3 @@ namespace gr {
 
   } /* namespace zynq */
 } /* namespace gr */
-

@@ -28,11 +28,10 @@
 #include "config.h"
 #endif
 
-#include <gr_io_signature.h>
+#include <gnuradio/io_signature.h>
 #include "fir_filter_ic_impl.h"
 #include <stdio.h>
 #include <stdlib.h>
-// #include <time.h>
 #include <libudev.h>
 #include <unistd.h>
 #include <sys/types.h>
@@ -64,7 +63,6 @@
 #define OFFSET_STREAM2_RD   (2*8) + OFFSET_H2S // AXI Stream 2 Unused
 #define OFFSET_STREAM3_WR   (3*8) + OFFSET_S2H // AXI Stream 3 Unused
 #define OFFSET_STREAM3_RD   (3*8) + OFFSET_H2S // AXI Stream 3 Unused
-
 
 #define FIFO_WR_CLEAR       0
 #define FIFO_WR_ADDR        1
@@ -102,9 +100,9 @@ namespace gr {
      * Open driver for FPGA communication and set FIR filter taps with constructor
      */
     fir_filter_ic_impl::fir_filter_ic_impl(const std::vector<int> &taps)
-      : gr_sync_block("fir_filter_ic",
-          gr_make_io_signature(1, 1, sizeof(int)),
-          gr_make_io_signature(1, 1, sizeof(gr_complex)))
+      : gr::sync_block("fir_filter_ic",
+          gr::io_signature::make(1, 1, sizeof(int)),
+          gr::io_signature::make(1, 1, sizeof(gr_complex)))
     {
       if (g_init == 1)
       {
@@ -395,4 +393,3 @@ namespace gr {
 
   } /* namespace zynq */
 } /* namespace gr */
-

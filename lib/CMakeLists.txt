@@ -24,13 +24,15 @@ include(GrPlatform) #define LIB_SUFFIX
 
 include_directories(${Boost_INCLUDE_DIR})
 link_directories(${Boost_LIBRARY_DIRS})
+
 list(APPEND zynq_sources
     fir_filter_ii_impl.cc
     fir_filter_ic_impl.cc
-    fir_filter_cc_impl.cc )
+    fir_filter_cc_impl.cc
+)
 
 add_library(gnuradio-zynq SHARED ${zynq_sources})
-target_link_libraries(gnuradio-zynq ${Boost_LIBRARIES} ${GRUEL_LIBRARIES} ${GNURADIO_CORE_LIBRARIES} ${UDEV_LIBRARIES})
+target_link_libraries(gnuradio-zynq ${Boost_LIBRARIES} ${GNURADIO_RUNTIME_LIBRARIES} ${UDEV_LIBRARIES})
 set_target_properties(gnuradio-zynq PROPERTIES DEFINE_SYMBOL "gnuradio_zynq_EXPORTS")
 
 ########################################################################
@@ -58,7 +60,7 @@ add_executable(test-zynq ${test_zynq_sources})
 
 target_link_libraries(
   test-zynq
-  ${GNURADIO_CORE_LIBRARIES}
+  ${GNURADIO_RUNTIME_LIBRARIES}
   ${Boost_LIBRARIES}
   ${CPPUNIT_LIBRARIES}
   gnuradio-zynq

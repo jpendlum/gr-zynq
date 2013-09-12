@@ -13,9 +13,9 @@
 #include "zynq/fir_filter_cc.h"
 %}
 
+
 %include "zynq/fir_filter_ii.h"
 GR_SWIG_BLOCK_MAGIC2(zynq, fir_filter_ii);
-
 %include "zynq/fir_filter_ic.h"
 GR_SWIG_BLOCK_MAGIC2(zynq, fir_filter_ic);
 %include "zynq/fir_filter_cc.h"
