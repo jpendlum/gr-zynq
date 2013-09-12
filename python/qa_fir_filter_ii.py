@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 #
 # Copyright 2013 <+YOU OR YOUR COMPANY+>.
 #
@@ -21,7 +22,7 @@
 from gnuradio import gr, gr_unittest
 import zynq_swig as zynq
 
-class qa_fir_filter_xx (gr_unittest.TestCase):
+class qa_fir_filter_ii (gr_unittest.TestCase):
 
     def setUp (self):
         self.tb = gr.top_block ()
@@ -29,7 +30,7 @@ class qa_fir_filter_xx (gr_unittest.TestCase):
     def tearDown (self):
         self.tb = None
 
-    def test_fir_filter_001 (self):
+    def test_001_t (self):
         # Check impulse response
         # Impulse is 2^15 due to the fixed point format of the coefficients. With a large enough impulse,
         # the filter's impulse response will simply be the filter coefficients.
@@ -49,29 +50,6 @@ class qa_fir_filter_xx (gr_unittest.TestCase):
         self.assertEqual(result_data,expected_result)
         self.tb.disconnect(src, fir_filter)
         self.tb.disconnect(fir_filter, dst)
-        # Force destructor to be called
-        del fir_filter
-        fir_filter = None
-
-        # FIXME: Fix code so multiple blocks can use the kernel buffers without error.
-
-        # Check impulse response
-        # Impulse is 2^15 due to the fixed point format of the coefficients. With a large enough impulse,
-        # the filter's impulse response will simply be the filter coefficients.
-        # src_data = (2**30 + 2**14, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
-        # expected_result = (1+1j,-1-1j,2+2j,-2-2j,3+3j,-3-3j,4+4j,-4-4j,5+5j,-5-5j,6+6j,-6-6j,7+7j,-7-7j,8+8j,-8-8j,8+8j,-7-7j,7+7j,-6-6j,6+6j,-5-5j,5+5j,-4-4j,4+4j,-3-3j,3+3j,-2-2j,2+2j,-1-1j,1+1j)
-        # filter_taps = (1,-1,2,-2,3,-3,4,-4,5,-5,6,-6,7,-7,8,-8)
-        # # Filter coefficients are fx1.31, so scale them up to allow us to retreive the filter coefficients from the impulse response.
-        # filter_taps = [x * 2**17 for x in filter_taps]
-        # src = gr.vector_source_i(src_data)
-        # # FIR filter taps are set to expected_result
-        # fir_filter = zynq.fir_filter_ic(filter_taps)
-        # dst = gr.vector_sink_c()
-        # self.tb.connect(src, fir_filter)
-        # self.tb.connect(fir_filter, dst)
-        # self.tb.run()
-        # result_data = dst.data()
-        # self.assertEqual(result_data,expected_result)
 
 if __name__ == '__main__':
-    gr_unittest.run(qa_fir_filter_xx)
+    gr_unittest.run(qa_fir_filter_ii)

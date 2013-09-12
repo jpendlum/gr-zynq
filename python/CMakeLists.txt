@@ -41,4 +41,6 @@ include(GrTest)
 
 set(GR_TEST_TARGET_DEPS gnuradio-zynq)
 set(GR_TEST_PYTHON_DIRS ${CMAKE_BINARY_DIR}/swig)
-GR_ADD_TEST(qa_fir_filter_xx ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/qa_fir_filter_xx.py)
+GR_ADD_TEST(qa_fir_filter_ii ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/qa_fir_filter_ii.py)
+GR_ADD_TEST(qa_fir_filter_ic ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/qa_fir_filter_ic.py)
+GR_ADD_TEST(qa_fir_filter_cc ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/qa_fir_filter_cc.py)

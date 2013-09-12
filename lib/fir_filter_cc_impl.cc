@@ -215,8 +215,10 @@ namespace gr {
       {
         d_buff32[2*i]   = (int)(in[i].real());
         d_buff32[2*i+1] = (int)(in[i].imag());
-        //printf("in[i]: %f\n",i,in[i]);
-        //printf("d_buff32[%2d](%p)=%d\n",i,&d_buff32[i],d_buff32[i]);
+        //printf("in[%d].real: %d\n",i,(int)(in[i].real()));
+        //printf("in[%d].imag: %d\n",i,(int)(in[i].imag()));
+        //printf("d_buff32[%2d](%p)=%d\n",i,&d_buff32[2*i],d_buff32[2*i]);
+        //printf("d_buff32[%2d](%p)=%d\n",i,&d_buff32[2*i+1],d_buff32[2*i+1]);
       }
 
       // Setup control registers to read samples from kernel buffer and write
