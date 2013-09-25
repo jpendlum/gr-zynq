@@ -22,6 +22,10 @@
  * Description: FPGA accelerated 31 tap, fixed point (fx1.31), symmetric
  *              FIR filter with reloadable coefficients.
  *
+ *              Note: While this version supports complex float, the samples
+ *              are casted to int for use with the fixed point filter. Be
+ *              aware that loss of precision can occur.
+ *
  ***************************************************************************/
 
 #ifdef HAVE_CONFIG_H
@@ -29,7 +33,7 @@
 #endif
 
 #include <gnuradio/io_signature.h>
-#include "fir_filter_ii_impl.h"
+#include "fir_filter_cc_impl.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <libudev.h>
@@ -90,19 +94,19 @@ namespace gr {
     // FIXME: Hack to ensure only one FPGA accelerator instance occurs
     static int g_init = 0;
 
-    fir_filter_ii::sptr
-    fir_filter_ii::make(const std::vector<int> &taps)
+    fir_filter_cc::sptr
+    fir_filter_cc::make(const std::vector<int> &taps)
     {
-      return gnuradio::get_initial_sptr(new fir_filter_ii_impl(taps));
+      return gnuradio::get_initial_sptr(new fir_filter_cc_impl(taps));
     }
 
     /*
-     * The private constructor
+     * Open driver for FPGA communication and set FIR filter taps with constructor
      */
-    fir_filter_ii_impl::fir_filter_ii_impl(const std::vector<int> &taps)
-      : gr::sync_block("fpga_fir_filter_ii",
-          gr::io_signature::make(1, 1, sizeof(int)),
-          gr::io_signature::make(1, 1, sizeof(int)))
+    fir_filter_cc_impl::fir_filter_cc_impl(const std::vector<int> &taps)
+      : gr::sync_block("fir_filter_cc",
+          gr::io_signature::make(1, 1, sizeof(gr_complex)),
+          gr::io_signature::make(1, 1, sizeof(gr_complex)))
     {
       if (g_init == 1)
       {
@@ -135,9 +139,9 @@ namespace gr {
     }
 
     /*
-     * Our virtual destructor.
+     * Close driver with destructor
      */
-    fir_filter_ii_impl::~fir_filter_ii_impl()
+    fir_filter_cc_impl::~fir_filter_cc_impl()
     {
       this->close_driver();
       g_init = 0;
@@ -149,7 +153,7 @@ namespace gr {
      * replace the old automatically.
      * Coefficeints are fixed point fx1.31, i.e. 1 integer bits & 31 fraction bits.
      */
-    void fir_filter_ii_impl::set_taps(const std::vector<int> &taps)
+    void fir_filter_cc_impl::set_taps(const std::vector<int> &taps)
     {
       int val;
       // Make sure the correct number of taps are provided
@@ -175,12 +179,14 @@ namespace gr {
      * to the FPGA via the AXI slave bus, and copies filtered samples back into the output
      * buffer.
      */
-    int fir_filter_ii_impl::work(int noutput_items,
+    int fir_filter_cc_impl::work(int noutput_items,
                                  gr_vector_const_void_star &input_items,
                                  gr_vector_void_star &output_items)
     {
-      const int *in = (const int *) input_items[0];
-      int *out = (int *) output_items[0];
+      gr_complex *in = (gr_complex *) input_items[0];
+      gr_complex *out = (gr_complex *) output_items[0];
+      // Easier to work with d_buff as a 32 bit buffer
+      int *d_buff32 = (int *)d_buff;
       int i = 0;
       int val = 0;
       int num_samples = 0;
@@ -198,12 +204,17 @@ namespace gr {
         num_samples = noutput_items;
       }
 
-      // Fill kernel buffer with samples from input buffer
-      // Cast to 64 bit as AXI bus is 64 bits wide
+      // Fill kernel buffer with samples from input buffer taking in account
+      // that the FIR filter expects two int32 samples (i.e. complex int) packed into a
+      // 64-bit word but we are provided two floats (i.e. gr_complex). Instead of
+      // trying to form a 64-bit word, we take advantage of the structure of gr_complex
+      // and casting to int.
       for(i = 0; i < num_samples; i++)
       {
-        d_buff[i] = (long long int)in[i];
-        printf("d_buff[%2d](%p)=%lld\n",i,&d_buff[i],d_buff[i]);
+        d_buff32[2*i]   = (int)(in[i].real());
+        d_buff32[2*i+1] = (int)(in[i].imag());
+        //printf("in[i]: %f\n",i,in[i]);
+        //printf("d_buff32[%2d](%p)=%d\n",i,&d_buff32[i],d_buff32[i]);
       }
 
       // Setup control registers to read samples from kernel buffer and write
@@ -224,18 +235,19 @@ namespace gr {
       d_control_regs[OFFSET_FIR_SAMP_WR+FIFO_WR_STS_RDY] = 0;
       d_control_regs[OFFSET_FIR_COEFF_WR+FIFO_WR_STS_RDY] = 0;
 
-      // Copy result from kernel buffer to output buffer
+      // Copy result from kernel buffer to output buffer and convert to complex float
       for(i = 0; i < num_samples; i++)
       {
-        out[i] = (int)d_buff[i+num_samples];
-        //printf("d_buff[%2d](%p)=%lld\n",i+num_samples,&d_buff[i+num_samples],d_buff[i+num_samples]);
+        out[i] = gr_complex((float)d_buff32[2*(i+num_samples)],(float)d_buff32[2*(i+num_samples)+1]);
+        //printf("d_buff32[%2d](%p)=%d\n",2*(i+num_samples),&d_buff32[2*(i+num_samples)],d_buff32[2*(i+num_samples)]);
+        //printf("d_buff32[%2d](%p)=%d\n",2*(i+num_samples)+1,&d_buff32[2*(i+num_samples)+1],d_buff32[2*(i+num_samples)+1]);
       }
 
       // Tell runtime system how many output items we produced.
       return num_samples;
     }
 
-    int fir_filter_ii_impl::open_driver()
+    int fir_filter_cc_impl::open_driver()
     {
       // open the file descriptor to our kernel module
       const char* dev = "/dev/user_peripheral";
@@ -281,7 +293,7 @@ namespace gr {
       return(0);
     }
 
-    int fir_filter_ii_impl::close_driver()
+    int fir_filter_cc_impl::close_driver()
     {
       munmap(d_control_regs,d_control_length);
       munmap(d_buff,d_buffer_length);
@@ -292,7 +304,7 @@ namespace gr {
       return(0);
     }
 
-    int fir_filter_ii_impl::read_fpga_status()
+    int fir_filter_cc_impl::read_fpga_status()
     {
       struct udev *udev;
       struct udev_enumerate *enumerate;
@@ -350,7 +362,7 @@ namespace gr {
       return(0);
     }
 
-    int fir_filter_ii_impl::get_params_from_sysfs()
+    int fir_filter_cc_impl::get_params_from_sysfs()
     {
       struct udev *udev;
       struct udev_enumerate *enumerate;

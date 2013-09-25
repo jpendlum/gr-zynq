@@ -27,7 +27,7 @@
 #ifndef INCLUDED_ZYNQ_FIR_FILTER_IC_IMPL_H
 #define INCLUDED_ZYNQ_FIR_FILTER_IC_IMPL_H
 
-#include <zynq/fir_filter_ic.h>
+#include "zynq/fir_filter_ic.h"
 
 namespace gr {
   namespace zynq {

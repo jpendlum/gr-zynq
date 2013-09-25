@@ -83,7 +83,7 @@
 // might cause the FIFO to overflow if a severe rate difference
 #define MAX_NUM_SAMPLES     8196
 // Number of unique taps (FIR filter is symmetric)
-#define NUM_TAPS            16
+#define NUM_TAPS            56
 
 namespace gr {
   namespace zynq {
@@ -203,7 +203,7 @@ namespace gr {
       for(i = 0; i < num_samples; i++)
       {
         d_buff[i] = (long long int)in[i];
-        printf("d_buff[%2d](%p)=%lld\n",i,&d_buff[i],d_buff[i]);
+        //printf("d_buff[%2d](%p)=%lld\n",i,&d_buff[i],d_buff[i]);
       }
 
       // Setup control registers to read samples from kernel buffer and write

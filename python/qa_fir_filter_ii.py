@@ -48,8 +48,6 @@ class qa_fir_filter_ii (gr_unittest.TestCase):
         self.tb.run()
         result_data = dst.data()
         self.assertEqual(result_data,expected_result)
-        self.tb.disconnect(src, fir_filter)
-        self.tb.disconnect(fir_filter, dst)
 
 if __name__ == '__main__':
     gr_unittest.run(qa_fir_filter_ii)
